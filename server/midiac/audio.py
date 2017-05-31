@@ -1,5 +1,6 @@
 import sys
 import math
+import struct
 import pyaudio
 
 #See http://en.wikipedia.org/wiki/Bit_rate#Audio
@@ -15,9 +16,8 @@ def playUnwrappedNotes(unwrapped_notes):
         rate=BITRATE,
         output=True,
         )
-    print(str(wave_data[:BITRATE]))
 
-    #stream.write(wave_data)
+    stream.write(struct.pack('f'*len(wave_data), *wave_data))
     stream.stop_stream()
     stream.close()
     p.terminate()

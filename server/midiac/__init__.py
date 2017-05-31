@@ -28,7 +28,9 @@ def unwrap_midi(midi_file):
                     unwrapped_notes.append({'note': message.note,
                         'startTime': note_array[message.note]['startTime'],
                         'duration': midi_time-note_array[message.note]['startTime']})
+                    note_array[message.note] = None
 
         midi_time += message.time
+        print 'midi_time %f message.time %f' % (midi_time, message.time)
 
     return unwrapped_notes
