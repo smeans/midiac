@@ -1,22 +1,20 @@
-import mido
+from . import mido_pkg as mido
+from . import audio
 
 def queue(midi_file):
     unwrapped_notes = unwrap_midi(midi_file)
-
-    print(unwrapped_notes)
+    audio.playUnwrappedNotes(unwrapped_notes)
 
 
 def unwrap_midi(midi_file):
     unwrapped_notes = []
     note_array = [None]*128
 
-    parser = mido.Parser()
-    parser.feed(midi_file.read())
-
     midi_time = 0
 
-    for message in parser:
-        print(message)
+    mid = mido.MidiFile(file=midi_file)
+
+    for message in mid:
         if message.type == 'note_on':
             if note_array[message.note]:
                 note_array[message.note]['count'] += 1
@@ -32,6 +30,5 @@ def unwrap_midi(midi_file):
                         'duration': midi_time-note_array[message.note]['startTime']})
 
         midi_time += message.time
-        print('midi_time: %d message_time: %d' % (midi_time, message.time))
 
     return unwrapped_notes

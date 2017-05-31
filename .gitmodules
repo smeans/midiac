@@ -1,0 +1,3 @@
+[submodule "server/midiac/mido"]
+	path = server/midiac/mido
+	url = git@github.com:olemb/mido.git
