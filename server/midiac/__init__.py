@@ -1,9 +1,16 @@
 from . import mido_pkg as mido
 from . import audio
+from . import sm
+
+# !!!LATER!!! refactor to be managed by config.
+
+floppy_sm = sm.SoundModule('/dev/tty.usbmodem1411')
 
 def queue(midi_file):
     unwrapped_notes = unwrap_midi(midi_file)
-    audio.playUnwrappedNotes(unwrapped_notes)
+    #audio.playUnwrappedNotes(unwrapped_notes)
+    floppy_sm.reset()
+    print(floppy_sm.readStatus())
 
 
 def unwrap_midi(midi_file):
