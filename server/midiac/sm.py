@@ -10,7 +10,7 @@ class SoundModule(object):
         self.serial = serial.Serial(port, 9600)
 
     def reset(self):
-        self.serial.write(self.MSG_RESET)
+        self.serial.write(str(chr(self.MSG_RESET)))
 
     def readStatus(self):
         while self.serial.in_waiting <= 0:

@@ -1,5 +1,6 @@
 void setup() {
   Serial.begin(9600);
+  Serial.println("Ready!");
 }
 
 const uint8_t MSG_BASE = 0x3e;
@@ -20,7 +21,9 @@ int getMessage() {
       } break;
       
       default: {
-        Serial.println("unknown message: " + msg);
+        Serial.print("unknown message: ");
+        Serial.print(msg, HEX);
+        Serial.print('\n');
       } break;
     }
   }
@@ -28,4 +31,5 @@ int getMessage() {
 
 void loop() {
   getMessage();
+  delay(10);
 }
