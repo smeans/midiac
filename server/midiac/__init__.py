@@ -6,7 +6,7 @@ import pprint
 pp = pprint.PrettyPrinter(indent=4)
 # !!!LATER!!! refactor to be managed by config.
 
-floppy_sm = sm.SoundModule('COM5')
+sound_modules = [sm.SoundModule('COM5', 'percussion')]
 
 def queue(midi_file):
     unwrapped_notes = unwrap_midi(midi_file)
@@ -17,6 +17,30 @@ def queue(midi_file):
         #print(floppy_sm.readStatus())
         #sleep(.1)
 
+def play(midi_file):
+    unwrapped_notes = unwrap_midi(midi_file)
+    distribute_notes(unwrapped_notes)
+
+def distribute_notes(unwrapped_notes):
+    notes = [[]] * len(sound_modules)
+
+    for note in unwrapped_notes:
+        winning_bid = 0.0
+        winning_bid_sound_module = None
+
+        for sound_module in sound_modules:
+            bid = sound_module.bid_on_note(note)
+            if bid > winning_bid:
+                winning_bid = bid
+                winning_bid_sound_module = sound_module
+
+        if winning_bid_sound_module != None:
+            notes[sound_modules.index(winning_bid_sound_module)].append(note)
+        else:
+            print 'unplayable note %s' % note
+
+    for i in range(len(sound_modules)):
+        sound_modules[i].load_notes(notes[i])
 
 def unwrap_midi(midi_file):
     def calc_velocity(velocities):

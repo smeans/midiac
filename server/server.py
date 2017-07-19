@@ -28,7 +28,7 @@ class play:
     def POST(self):
         ws = web.input(midi_file={})
 
-        midiac.queue(ws['midi_file'].file)
+        midiac.play(ws['midi_file'].file)
 
         raise web.seeother('/')
 
