@@ -10,7 +10,6 @@ sound_modules = [sm.SoundModule('COM5', 'percussion')]
 
 def queue(midi_file):
     unwrapped_notes = unwrap_midi(midi_file)
-    pp.pprint(unwrapped_notes)
     audio.playUnwrappedNotes(unwrapped_notes)
     #floppy_sm.reset()
     #while(1):
@@ -20,6 +19,11 @@ def queue(midi_file):
 def play(midi_file):
     unwrapped_notes = unwrap_midi(midi_file)
     distribute_notes(unwrapped_notes)
+
+    for sound_module in sound_modules:
+        status = sound_module.play()
+
+        print '%s: arduino status: %s' % (sound_module.sm_type, status)
 
 def distribute_notes(unwrapped_notes):
     notes = [[]] * len(sound_modules)
@@ -40,7 +44,8 @@ def distribute_notes(unwrapped_notes):
             print 'unplayable note %s' % note
 
     for i in range(len(sound_modules)):
-        sound_modules[i].load_notes(notes[i])
+        status = sound_modules[i].load_notes(notes[i])
+        print '%s: arduino status: %s' % (sound_modules[i].sm_type, status)
 
 def unwrap_midi(midi_file):
     def calc_velocity(velocities):
