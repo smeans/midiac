@@ -6,7 +6,7 @@ import pprint
 pp = pprint.PrettyPrinter(indent=4)
 # !!!LATER!!! refactor to be managed by config.
 
-sound_modules = [sm.SoundModule('COM5', 'percussion')]
+sound_modules = [sm.SoundModule('COM4', 'percussion')]
 
 def queue(midi_file):
     unwrapped_notes = unwrap_midi(midi_file)
@@ -24,6 +24,14 @@ def play(midi_file):
         status = sound_module.play()
 
         print '%s: arduino status: %s' % (sound_module.sm_type, status)
+
+def control(command):
+    if not 'action' in command:
+        print 'bad command message %s' % command
+        return None
+        
+    for sound_module in sound_modules:
+        sound_module.control(command)
 
 def distribute_notes(unwrapped_notes):
     notes = [[]] * len(sound_modules)
@@ -98,4 +106,5 @@ def unwrap_midi(midi_file):
                         note_array[message.note]['startTime'] = midi_time
                         note_array[message.note]['velocity'] = new_velocity
 
-    return unwrapped_notes
+
+    return sorted(unwrapped_notes, key=lambda note: note['startTime'])

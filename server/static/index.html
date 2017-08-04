@@ -24,6 +24,15 @@
     <p><label>MIDI file</label><input type="file" name="midi_file"/></p>
     <p><button type="submit">submit</button></p>
   </form>
+  <p class="controls">
+    <button type="button">play</button>
+    <button type="button">pause</button>
+    <button type="stop">stop</button>
+  </p>
+  <p>
+    <label>master volume</label><input class="volume" type="range" name="master_volume" min="0.0" max="1.0" step=".05" value="1.0"/>
+  </p>
+  <script src="js/jquery-3.2.1.min.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

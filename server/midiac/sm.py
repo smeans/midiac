@@ -3,10 +3,14 @@ import time
 import struct
 
 class SoundModule(object):
+    MAX_AMPLITUDE = 127
     MSG_BASE = 0x3e
     MSG_RESET = MSG_BASE
     MSG_LOADNOTES = MSG_BASE+1
     MSG_PLAY = MSG_BASE+2
+    MSG_PAUSE = MSG_BASE+3
+    MSG_STOP = MSG_BASE+4
+    MSG_VOLUME = MSG_BASE+5
 
     def __init__(self, port, sm_type):
         self.serial = serial.Serial(port, 9600)
@@ -37,10 +41,14 @@ class SoundModule(object):
         return status
 
     def load_notes(self, unwrapped_notes):
+        last_time = [0]
+
         def note_to_bin(note):
-            start_time = int(note['startTime'] * 1000)
-            end_time = start_time + int(note['duration'] * 1000)
-            return struct.pack('<LLBB', start_time, end_time, note['note'], note['velocity'])
+            delay = int(note['startTime'] * 1000) - last_time[0]
+            duration = int(note['duration'] * 1000)
+            last_time[0] += delay
+
+            return struct.pack('<HHBB', delay, duration, note['note'], note['velocity'])
 
         self.serial.write(str(chr(self.MSG_LOADNOTES)))
         buffer_len = len(unwrapped_notes) * len(note_to_bin(unwrapped_notes[0]))
@@ -56,6 +64,30 @@ class SoundModule(object):
 
     def play(self):
         self.serial.write(str(chr(self.MSG_PLAY)))
+
+        return self.read_status()
+
+    def control(self, command):
+        message_map = {'play': self.MSG_PLAY, 'pause': self.MSG_PAUSE, 'stop': self.MSG_STOP, 'volume': self.MSG_VOLUME}
+
+        action = command['action']
+
+        if not action in message_map:
+            print 'unrecognized command "%s"' % action
+            return None
+
+        if action != 'volume':
+            self.serial.write(str(chr(message_map[action])))
+        else:
+            if not 'value' in command:
+                print 'missing volume value: %s' % command
+                return None
+
+            self.serial.write(str(chr(message_map[action])))
+            value = float(command['value'])
+            new_volume = int(min(self.MAX_AMPLITUDE, max(0, value * self.MAX_AMPLITUDE)))
+            print 'value %d new_volume %d' % (value, new_volume)
+            self.serial.write(str(chr(new_volume)))
 
         return self.read_status()
 

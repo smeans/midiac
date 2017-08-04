@@ -1,11 +1,13 @@
 import web
+import json
+
 import midiac
 
 urls = (
     '/()(index\.html)?', 'static',
     '/(js|css|images)/(.*)', 'static',
-    '/play', 'play'
-
+    '/play', 'play',
+    '/control', 'control'
     )
 
 app = web.application(urls, globals())
@@ -31,6 +33,14 @@ class play:
         midiac.play(ws['midi_file'].file)
 
         raise web.seeother('/')
+
+class control:
+    def POST(self):
+        message = json.loads(web.data())
+
+        midiac.control(message)
+
+        return '{"result":"ok"}'
 
 if __name__ == "__main__":
     app.run()
