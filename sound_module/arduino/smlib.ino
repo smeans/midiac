@@ -10,6 +10,7 @@ const uint8_t MSG_PLAY = MSG_BASE+2;
 const uint8_t MSG_PAUSE = MSG_BASE+3;
 const uint8_t MSG_STOP = MSG_BASE+4;
 const uint8_t MSG_VOLUME = MSG_BASE+5;
+const uint8_t MSG_INFO = MSG_BASE+6;
 
 struct NOTE {
   unsigned short delay;
@@ -51,7 +52,6 @@ void resetSoundModule() {
 int getMessage() {
   if (Serial.available()) {
     uint8_t msg = Serial.read();
-
     switch (msg) {
       case MSG_RESET: {
         resetSoundModule();
@@ -84,6 +84,8 @@ int getMessage() {
         readSerialBytes(sizeof(volume), &volume);
         Serial.println("MSG_VOLUME: OK");
       } break;
+
+      case MSG_INFO: {} break;
 
       default: {
         Serial.print("unknown message: ");

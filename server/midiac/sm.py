@@ -11,10 +11,12 @@ class SoundModule(object):
     MSG_PAUSE = MSG_BASE+3
     MSG_STOP = MSG_BASE+4
     MSG_VOLUME = MSG_BASE+5
+    MSG_INFO = MSG_BASE+6
 
     def __init__(self, port, sm_type):
         self.serial = serial.Serial(port, 9600)
         print '%s: arduino status: %s' % (sm_type, self.read_status())
+        print '%s: %s' % (sm_type, self.info())
 
         self.sm_type = sm_type
 
@@ -27,7 +29,7 @@ class SoundModule(object):
         if self.sm_type == 'percussion':
             return 1.0 if note['duration'] == 0 else 0.0
         else:
-            return 1.0
+            return 1.0 if note['duration'] > 0 else 0.0
 
     def read_status(self):
         status = ''
@@ -41,12 +43,11 @@ class SoundModule(object):
         return status
 
     def load_notes(self, unwrapped_notes):
-        last_time = [0]
-
         def note_to_bin(note):
-            delay = int(note['startTime'] * 1000) - last_time[0]
+            delay = int(note['delay'] * 1000)
             duration = int(note['duration'] * 1000)
-            last_time[0] += delay
+
+            print 'note %s: delay: %s duration: %s' % (note['note'], note['delay'], note['duration'])
 
             return struct.pack('<HHBB', delay, duration, note['note'], note['velocity'])
 
@@ -55,8 +56,6 @@ class SoundModule(object):
         # !!!TODO!!! send length and all note structures to arduino
         self.serial.write(struct.pack('<L', buffer_len))
 
-        print 'buffer_len %d note struct size: %d' % (buffer_len, len(note_to_bin(unwrapped_notes[0])))
-
         for note in unwrapped_notes:
             self.serial.write(note_to_bin(note))
 
@@ -64,6 +63,11 @@ class SoundModule(object):
 
     def play(self):
         self.serial.write(str(chr(self.MSG_PLAY)))
+
+        return self.read_status()
+
+    def info(self):
+        self.serial.write(str(chr(self.MSG_INFO)))
 
         return self.read_status()
 

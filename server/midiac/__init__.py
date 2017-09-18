@@ -6,7 +6,7 @@ import pprint
 pp = pprint.PrettyPrinter(indent=4)
 # !!!LATER!!! refactor to be managed by config.
 
-sound_modules = [sm.SoundModule('COM4', 'percussion')]
+sound_modules = [sm.SoundModule('COM4', 'percussion'), sm.SoundModule('COM7', 'floppy')]
 
 def queue(midi_file):
     unwrapped_notes = unwrap_midi(midi_file)
@@ -29,12 +29,12 @@ def control(command):
     if not 'action' in command:
         print 'bad command message %s' % command
         return None
-        
+
     for sound_module in sound_modules:
         sound_module.control(command)
 
 def distribute_notes(unwrapped_notes):
-    notes = [[]] * len(sound_modules)
+    notes = [[] for _ in range(len(sound_modules))]
 
     for note in unwrapped_notes:
         winning_bid = 0.0
@@ -52,8 +52,21 @@ def distribute_notes(unwrapped_notes):
             print 'unplayable note %s' % note
 
     for i in range(len(sound_modules)):
-        status = sound_modules[i].load_notes(notes[i])
+        calc_delays(notes[i])
+
+        if len(notes[i]) > 0:
+            status = sound_modules[i].load_notes(notes[i])
+        else:
+            status = sound_modules[i].reset()
         print '%s: arduino status: %s' % (sound_modules[i].sm_type, status)
+
+def calc_delays(notes):
+    if len(notes) <= 0:
+        return
+
+    notes[0]['delay'] = notes[0]['startTime']
+    for i in range(1, len(notes)):
+        notes[i]['delay'] = notes[i]['startTime'] - (notes[i-1]['startTime'] + notes[i-1]['duration'])
 
 def unwrap_midi(midi_file):
     def calc_velocity(velocities):
@@ -66,10 +79,13 @@ def unwrap_midi(midi_file):
 
     mid = mido.MidiFile(file=midi_file)
 
+    print 'ticks_per_beat %d' % mid.ticks_per_beat
+
     for message in mid:
         midi_time += message.time
 
         if message.type == 'note_on':
+            print '%s: note_on time %d: %s' % (midi_time, message.note, message.time)
             if note_array[message.note]:
                 note_array[message.note]['velocities'][message.channel] = message.velocity
                 new_velocity = calc_velocity(note_array[message.note]['velocities'])
@@ -84,6 +100,7 @@ def unwrap_midi(midi_file):
                 note_array[message.note] = {'startTime': midi_time, 'velocity': message.velocity, 'velocities': {message.channel: message.velocity}}
         elif message.type =='note_off':
             if note_array[message.note]:
+                print '%s: note_off time %d: %s' % (midi_time, message.note, message.time)
                 try:
                     del note_array[message.note]['velocities'][message.channel]
                 except:
@@ -105,6 +122,10 @@ def unwrap_midi(midi_file):
                             'duration': midi_time-note_array[message.note]['startTime'] if message.channel != 9 else 0})
                         note_array[message.note]['startTime'] = midi_time
                         note_array[message.note]['velocity'] = new_velocity
+        elif message.type == 'set_tempo':
+            pp.pprint(message)
+        elif message.type == 'time_signature':
+            pp.pprint(message)
 
 
     return sorted(unwrapped_notes, key=lambda note: note['startTime'])

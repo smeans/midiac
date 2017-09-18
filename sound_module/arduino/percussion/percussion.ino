@@ -66,6 +66,10 @@ void loop() {
       reset_song();
       Serial.println("MSG_STOP: OK");
     } break;
+
+    case MSG_INFO: {
+      Serial.println("MSG_INFO: OK: PERCUSSION MODULE");
+    }
   }
 
   if (playing) {
