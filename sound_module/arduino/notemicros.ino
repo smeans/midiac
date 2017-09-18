@@ -1,6 +1,6 @@
 #include <avr/pgmspace.h>
 
-const unsigned long note_micros[] PROGMEM = {
+const unsigned long note_micros[] = {
   122312,
   115447,
   108968,

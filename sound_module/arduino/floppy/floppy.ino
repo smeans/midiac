@@ -8,7 +8,7 @@ const int pins_per_floppy = 2;
 #define dir_reverse   HIGH
 const int max_floppy_steps = 80;
 
-int floppy_pins[] = {2,4};
+int floppy_pins[] = {2,4,6,8,10,12,14,16};
 #define floppy_count ((int)(sizeof(floppy_pins) / sizeof(floppy_pins[0])))
 int floppy_position[floppy_count];
 int floppy_dir[floppy_count];
@@ -30,7 +30,7 @@ bool playing = false;
 bool in_note = false;
 int current_note = 0;
 unsigned long note_start_micros;
-unsigned int note_interval;
+unsigned long note_interval;
 unsigned int floppies_playing;
 unsigned long last_millis;
 unsigned long elapsed_millis;
