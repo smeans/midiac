@@ -46,6 +46,8 @@ void reset_song() {
 }
 
 void loop() {
+  unsigned long new_millis = millis();
+
   switch (getMessage()) {
     case MSG_LOADNOTES: {
       current_note = 0;
@@ -53,7 +55,7 @@ void loop() {
 
     case MSG_PLAY: {
       playing = true;
-      last_millis = millis();
+      last_millis = new_millis;
       Serial.println("MSG_PLAY: OK");
     } break;
 
@@ -73,8 +75,8 @@ void loop() {
   }
 
   if (playing) {
-    elapsed_millis += millis() - last_millis;
-    last_millis = millis();
+    elapsed_millis += new_millis - last_millis;
+    last_millis = new_millis;
 
     if (elapsed_millis > note_buffer[current_note].delay + song_millis) {
       play_note(&note_buffer[current_note]);

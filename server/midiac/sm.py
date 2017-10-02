@@ -15,7 +15,7 @@ class SoundModule(object):
 
     def __init__(self, port, sm_type):
         self.serial = serial.Serial(port, 9600)
-        print '%s: arduino status: %s' % (sm_type, self.read_status())
+        print '%s: %s: arduino status: %s' % (port, sm_type, self.read_status())
         print '%s: %s' % (sm_type, self.info())
 
         self.sm_type = sm_type
@@ -47,7 +47,7 @@ class SoundModule(object):
             delay = int(note['delay'] * 1000)
             duration = int(note['duration'] * 1000)
 
-            print 'note %s: delay: %s duration: %s' % (note['note'], note['delay'], note['duration'])
+            print 'note %s: startTime: %s delay: %s duration: %s' % (note['note'], note['startTime'], note['delay'], note['duration'])
 
             return struct.pack('<HHBB', delay, duration, note['note'], note['velocity'])
 
@@ -61,10 +61,10 @@ class SoundModule(object):
 
         return self.read_status()
 
-    def play(self):
-        self.serial.write(str(chr(self.MSG_PLAY)))
+    def play(self, start_delay):
+        self.serial.write(str(chr(self.MSG_PLAY)) + struct.pack('<L', start_delay))
 
-        return self.read_status()
+        #return self.read_status()
 
     def info(self):
         self.serial.write(str(chr(self.MSG_INFO)))

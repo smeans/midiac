@@ -1,27 +1,26 @@
 import mido
 from . import audio
 from . import sm
+import time
 from time import sleep
 import pprint
 pp = pprint.PrettyPrinter(indent=4)
 # !!!LATER!!! refactor to be managed by config.
 
-sound_modules = [sm.SoundModule('COM4', 'percussion'), sm.SoundModule('COM7', 'floppy')]
+sound_modules = [sm.SoundModule('COM4', 'percussion'), sm.SoundModule('COM7', 'floppy') ]
 
 def queue(midi_file):
     unwrapped_notes = unwrap_midi(midi_file)
     audio.playUnwrappedNotes(unwrapped_notes)
-    #floppy_sm.reset()
-    #while(1):
-        #print(floppy_sm.readStatus())
-        #sleep(.1)
 
 def play(midi_file):
     unwrapped_notes = unwrap_midi(midi_file)
     distribute_notes(unwrapped_notes)
 
+    start_time = time.clock() + 5
+
     for sound_module in sound_modules:
-        status = sound_module.play()
+        status = sound_module.play((start_time-time.clock()) * 1000000)
 
         print '%s: arduino status: %s' % (sound_module.sm_type, status)
 
@@ -53,6 +52,9 @@ def distribute_notes(unwrapped_notes):
 
     for i in range(len(sound_modules)):
         calc_delays(notes[i])
+        # !!!HACK!!! simultaneous notes yield negative delays; we need multiple
+        # floppy modules to play
+        notes[i] = [note for note in notes[i] if note['delay'] >= 0]
 
         if len(notes[i]) > 0:
             status = sound_modules[i].load_notes(notes[i])

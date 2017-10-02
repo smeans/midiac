@@ -24,6 +24,8 @@ int note_count;
 const int MAX_AMPLITUDE = 127;
 byte volume = MAX_AMPLITUDE;
 
+unsigned long play_delay;
+
 void readSerialBytes(int cb, byte *bytes) {
   while (cb > 0) {
     int cba;
@@ -60,7 +62,11 @@ int getMessage() {
       } break;
 
       case MSG_PLAY: {
-        Serial.println("MSG_PLAY: OK");
+        readSerialBytes(sizeof(play_delay), (byte *)&play_delay);
+        Serial.print("MSG_PLAY: OK: PLAY_DELAY: ");
+        Serial.print(play_delay);
+        Serial.print("\n");
+        delayMicroseconds(play_delay);
       } break;
 
       case MSG_LOADNOTES: {

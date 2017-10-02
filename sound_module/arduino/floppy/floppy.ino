@@ -78,15 +78,16 @@ void reset_song() {
 }
 
 void loop() {
+  unsigned long new_millis = millis();
+
   switch (getMessage()) {
     case MSG_LOADNOTES: {
       current_note = 0;
-      reset_drives();
     } break;
 
     case MSG_PLAY: {
       playing = true;
-      last_millis = millis();
+      last_millis = new_millis;
       Serial.println("MSG_PLAY: OK");
     } break;
 
@@ -97,6 +98,7 @@ void loop() {
 
     case MSG_STOP: {
       reset_song();
+      reset_drives();
       Serial.println("MSG_STOP: OK");
     } break;
 
@@ -106,8 +108,6 @@ void loop() {
   }
 
   if (playing) {
-    unsigned long new_millis = millis();
-
     elapsed_millis += new_millis - last_millis;
     last_millis = new_millis;
 
