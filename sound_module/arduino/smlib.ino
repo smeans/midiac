@@ -1,6 +1,6 @@
 void sm_setup() {
   Serial.begin(9600);
-  Serial.println("Ready!");
+  Serial.println(F("Ready!"));
 }
 
 const uint8_t MSG_BASE = 0x3e;
@@ -26,7 +26,8 @@ byte volume = MAX_AMPLITUDE;
 
 unsigned long play_delay;
 
-void readSerialBytes(int cb, byte *bytes) {
+int readSerialBytes(int cb, byte *bytes) {
+  int cbstart = cb;
   while (cb > 0) {
     int cba;
 
@@ -41,6 +42,8 @@ void readSerialBytes(int cb, byte *bytes) {
       cb--;
     }
   }
+
+  return cbstart;
 }
 
 void resetSoundModule() {
@@ -58,14 +61,14 @@ int getMessage() {
       case MSG_RESET: {
         resetSoundModule();
 
-        Serial.println("MSG_RESET: OK");
+        Serial.println(F("MSG_RESET: OK"));
       } break;
 
       case MSG_PLAY: {
         readSerialBytes(sizeof(play_delay), (byte *)&play_delay);
-        Serial.print("MSG_PLAY: OK: PLAY_DELAY: ");
+        Serial.print(F("MSG_PLAY: OK: PLAY_DELAY: "));
         Serial.print(play_delay);
-        Serial.print("\n");
+        Serial.print(F("\n"));
         delayMicroseconds(play_delay);
       } break;
 
@@ -78,23 +81,27 @@ int getMessage() {
         if (note_buffer = (NOTE *)malloc(buffer_len)) {
           note_count = buffer_len/sizeof(*note_buffer);
           readSerialBytes(buffer_len, (byte *)note_buffer);
-          Serial.print("MSG_LOADNOTES: OK: ");
+          Serial.print(F("MSG_LOADNOTES: OK: "));
           Serial.print(note_count);
-          Serial.println(" notes loaded");
+          Serial.println(F(" notes loaded"));
         } else {
-          Serial.println("MSG_LOADNOTES: ERROR: could not allocate buffer");
+          byte dummy[128];
+          while(buffer_len > 0) {
+            buffer_len -= readSerialBytes(min(buffer_len, sizeof(dummy)/sizeof(*dummy)), dummy);
+          }
+          Serial.println(F("MSG_LOADNOTES: ERROR: could not allocate buffer"));
         }
       } break;
 
       case MSG_VOLUME: {
         readSerialBytes(sizeof(volume), &volume);
-        Serial.println("MSG_VOLUME: OK");
+        Serial.println(F("MSG_VOLUME: OK"));
       } break;
 
       case MSG_INFO: {} break;
 
       default: {
-        Serial.print("unknown message: ");
+        Serial.print(F("unknown message: "));
         Serial.print(msg, HEX);
         Serial.print('\n');
       } break;

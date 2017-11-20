@@ -1,6 +1,10 @@
+import os
 import serial
 import time
 import struct
+import subprocess
+
+from string import Template
 
 class SoundModule(object):
     MAX_AMPLITUDE = 127
@@ -13,22 +17,45 @@ class SoundModule(object):
     MSG_VOLUME = MSG_BASE+5
     MSG_INFO = MSG_BASE+6
 
-    def __init__(self, port, sm_type):
-        self.serial = serial.Serial(port, 9600)
-        print '%s: %s: arduino status: %s' % (port, sm_type, self.read_status())
-        print '%s: %s' % (sm_type, self.info())
-
+    def __init__(self, id, port, sm_type):
+        self.id = id
+        self.port = port
         self.sm_type = sm_type
+        self.serial = None
+
+        self.open_port()
+
+    def open_port(self):
+        if self.serial:
+            self.close_port()
+
+        self.serial = serial.Serial(self.port, 9600)
+        print '%s: %s: port opened: arduino status: %s' % (self.port, self.sm_type, self.read_status())
+        print '%s: %s' % (self.sm_type, self.info())
+
+    def close_port(self):
+        if not self.serial:
+            return
+
+        print '%s: %s: port closed' % (self.port, self.sm_type)
+
+        self.serial.close()
+        self.serial = None
 
     def reset(self):
         self.serial.write(str(chr(self.MSG_RESET)))
 
         return self.read_status()
 
-    def bid_on_note(self, note):
+    def bid_on_note(self, notes, note):
         if self.sm_type == 'percussion':
             return 1.0 if note['duration'] == 0 else 0.0
         else:
+            if len(notes) > 0:
+                last_note = notes[-1]
+                if last_note['startTime'] + last_note['duration'] > note['startTime']:
+                    return 0.0
+
             return 1.0 if note['duration'] > 0 else 0.0
 
     def read_status(self):
@@ -47,12 +74,12 @@ class SoundModule(object):
             delay = int(note['delay'] * 1000)
             duration = int(note['duration'] * 1000)
 
-            print 'note %s: startTime: %s delay: %s duration: %s' % (note['note'], note['startTime'], note['delay'], note['duration'])
-
             return struct.pack('<HHBB', delay, duration, note['note'], note['velocity'])
 
         self.serial.write(str(chr(self.MSG_LOADNOTES)))
         buffer_len = len(unwrapped_notes) * len(note_to_bin(unwrapped_notes[0]))
+        print "%s: %s bytes required" % (self.sm_type, buffer_len)
+
         # !!!TODO!!! send length and all note structures to arduino
         self.serial.write(struct.pack('<L', buffer_len))
 
@@ -94,6 +121,34 @@ class SoundModule(object):
             self.serial.write(str(chr(new_volume)))
 
         return self.read_status()
+
+    def make_sketch(self, unwrapped_notes):
+        template_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'arduino/%s-template.ino' % self.sm_type)
+        print template_path
+        template_file = open(template_path, 'r')
+        template = Template(''.join(template_file.readlines()))
+        template_file.close()
+
+        note_elements = ['{%s, %s, %s, %s}' % (int(note['delay']*1000), int(note['duration']*1000), note['note'], note['velocity']) for note in unwrapped_notes]
+        sketch = template.substitute({'notes': ','.join(note_elements)})
+
+        return sketch
+
+    def upload_sketch(self, unwrapped_notes):
+        sketch = self.make_sketch(unwrapped_notes)
+        build_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'arduino/build/%s' % self.id)
+
+        if not os.path.exists(build_path):
+            os.makedirs(build_path)
+
+        sketch_path = os.path.join(build_path, '%s.ino' % self.id)
+        with open(sketch_path, 'w') as f:
+            f.write(sketch)
+            f.close()
+
+        self.close_port()
+        print subprocess.check_output(['arduino_debug.exe', '--upload', sketch_path, '--port', self.port])
+        self.open_port()
 
     def __del__(self):
         self.serial.close()

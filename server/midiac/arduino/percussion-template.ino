@@ -1,5 +1,11 @@
 #include "C://Users/alexe/SourceControl/midiac/sound_module/arduino/smlib.ino"
 
+const NOTE song_buffer[] PROGMEM = {
+    $notes
+};
+
+#include "C://Users/alexe/SourceControl/midiac/sound_module/arduino/songbuffer.ino"
+
 const int hd_pins[] = {2,3,4,5,6,7};
 const int hd_count = sizeof(hd_pins) / sizeof(hd_pins[0]);
 const int group_size = MAX_AMPLITUDE / hd_count;
@@ -18,7 +24,7 @@ unsigned long last_millis;
 unsigned long elapsed_millis;
 unsigned long song_millis;
 
-void play_note(NOTE *note) {
+void play_note(const NOTE *note) {
   unsigned short velocity = (unsigned int)((float)note->velocity * ((float)volume/(float)MAX_AMPLITUDE));
 
   for (int i = 0; i < hd_count; i++) {
@@ -78,12 +84,12 @@ void loop() {
     elapsed_millis += new_millis - last_millis;
     last_millis = new_millis;
 
-    if (elapsed_millis > note_buffer[current_note].delay + song_millis) {
-      play_note(&note_buffer[current_note]);
+    if (elapsed_millis > PSONG(current_note)->delay + song_millis) {
+      play_note(PSONG(current_note));
 
-      song_millis += note_buffer[current_note].delay + note_buffer[current_note].duration;
+      song_millis += PSONG(current_note)->delay + PSONG(current_note)->duration;
 
-      if (++current_note >= note_count) {
+      if (++current_note >= PSONG_COUNT) {
         reset_song();
       }
     }

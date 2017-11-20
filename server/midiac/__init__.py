@@ -7,7 +7,7 @@ import pprint
 pp = pprint.PrettyPrinter(indent=4)
 # !!!LATER!!! refactor to be managed by config.
 
-sound_modules = [sm.SoundModule('COM4', 'percussion'), sm.SoundModule('COM7', 'floppy') ]
+sound_modules = [sm.SoundModule('percussion', 'COM9', 'percussion'), sm.SoundModule('floppy', 'COM7', 'floppy'), sm.SoundModule('floppy', 'COM10', 'floppy') ]
 
 def queue(midi_file):
     unwrapped_notes = unwrap_midi(midi_file)
@@ -34,13 +34,14 @@ def control(command):
 
 def distribute_notes(unwrapped_notes):
     notes = [[] for _ in range(len(sound_modules))]
+    unplayable_notes = 0
 
     for note in unwrapped_notes:
         winning_bid = 0.0
         winning_bid_sound_module = None
 
         for sound_module in sound_modules:
-            bid = sound_module.bid_on_note(note)
+            bid = sound_module.bid_on_note(notes[sound_modules.index(sound_module)], note)
             if bid > winning_bid:
                 winning_bid = bid
                 winning_bid_sound_module = sound_module
@@ -49,18 +50,17 @@ def distribute_notes(unwrapped_notes):
             notes[sound_modules.index(winning_bid_sound_module)].append(note)
         else:
             print 'unplayable note %s' % note
+            unplayable_notes += 1
+
+    if unplayable_notes > 0:
+        print 'Unplayable Notes %d/%d (%f%%)' % (unplayable_notes, len(unwrapped_notes), float(unplayable_notes) / float(len(unwrapped_notes))*100.0)
 
     for i in range(len(sound_modules)):
         calc_delays(notes[i])
         # !!!HACK!!! simultaneous notes yield negative delays; we need multiple
         # floppy modules to play
         notes[i] = [note for note in notes[i] if note['delay'] >= 0]
-
-        if len(notes[i]) > 0:
-            status = sound_modules[i].load_notes(notes[i])
-        else:
-            status = sound_modules[i].reset()
-        print '%s: arduino status: %s' % (sound_modules[i].sm_type, status)
+        sound_modules[i].upload_sketch(notes[i])
 
 def calc_delays(notes):
     if len(notes) <= 0:
@@ -87,7 +87,6 @@ def unwrap_midi(midi_file):
         midi_time += message.time
 
         if message.type == 'note_on':
-            print '%s: note_on time %d: %s' % (midi_time, message.note, message.time)
             if note_array[message.note]:
                 note_array[message.note]['velocities'][message.channel] = message.velocity
                 new_velocity = calc_velocity(note_array[message.note]['velocities'])
@@ -102,7 +101,6 @@ def unwrap_midi(midi_file):
                 note_array[message.note] = {'startTime': midi_time, 'velocity': message.velocity, 'velocities': {message.channel: message.velocity}}
         elif message.type =='note_off':
             if note_array[message.note]:
-                print '%s: note_off time %d: %s' % (midi_time, message.note, message.time)
                 try:
                     del note_array[message.note]['velocities'][message.channel]
                 except:
