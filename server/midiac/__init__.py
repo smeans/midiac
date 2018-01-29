@@ -1,5 +1,4 @@
 import mido
-from . import audio
 from . import sm
 import time
 from time import sleep
@@ -7,7 +6,8 @@ import pprint
 pp = pprint.PrettyPrinter(indent=4)
 # !!!LATER!!! refactor to be managed by config.
 
-sound_modules = [sm.SoundModule('percussion', 'COM9', 'percussion'), sm.SoundModule('floppy', 'COM7', 'floppy'), sm.SoundModule('floppy', 'COM10', 'floppy') ]
+# sm.SoundModule('floppy1', '/dev/ttyUSB1', 'floppy'), sm.SoundModule('floppy2', '/dev/ttyUSB2', 'floppy'), sm.SoundModule('percussion0', '/dev/ttyUSB3', 'percussion')
+sound_modules = [sm.SoundModule('floppy0', '/dev/ttyUSB1', 'floppy'), sm.SoundModule('floppy1', '/dev/ttyUSB2', 'floppy'), sm.SoundModule('percussion0', '/dev/ttyUSB0', 'percussion') ]
 
 def queue(midi_file):
     unwrapped_notes = unwrap_midi(midi_file)

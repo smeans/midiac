@@ -1,10 +1,10 @@
-#include "C://Users/alexe/SourceControl/midiac/sound_module/arduino/smlib.ino"
+#include "/home/pi/midiac/sound_module/arduino/smlib.ino"
 
 const NOTE song_buffer[] PROGMEM = {
     $notes
 };
 
-#include "C://Users/alexe/SourceControl/midiac/sound_module/arduino/songbuffer.ino"
+#include "/home/pi/midiac/sound_module/arduino/songbuffer.ino"
 
 const int hd_pins[] = {2,3,4,5,6,7};
 const int hd_count = sizeof(hd_pins) / sizeof(hd_pins[0]);

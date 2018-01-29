@@ -1,24 +1,35 @@
-#include "C://Users/alexe/SourceControl/midiac/sound_module/arduino/smlib.ino"
-#include "C://Users/alexe/SourceControl/midiac/sound_module/arduino/notemicros.ino"
+#include "/home/pi/midiac/sound_module/arduino/smlib.ino"
+#include "/home/pi/midiac/sound_module/arduino/notemicros.ino"
 
 const NOTE song_buffer[] PROGMEM = {
     $notes
 };
 
-#include "C://Users/alexe/SourceControl/midiac/sound_module/arduino/songbuffer.ino"
+#include "/home/pi/midiac/sound_module/arduino/songbuffer.ino"
 
-const int pins_per_floppy = 2;
-#define step_pin  0
-#define dir_pin   1
+const int pins_per_floppy = 3;
+#define enable_pin  0
+#define dir_pin     1
+#define step_pin    2
 #define dir_forward   LOW
 #define dir_reverse   HIGH
 const int max_floppy_steps = 80;
 
-int floppy_pins[] = {2,4,6,8,10,12,14,16};
+int floppy_pins[] = {22,25,28,31,34,37};
 #define floppy_count ((int)(sizeof(floppy_pins) / sizeof(floppy_pins[0])))
 int floppy_position[floppy_count];
 int floppy_dir[floppy_count];
 int group_size = MAX_AMPLITUDE / floppy_count;
+
+bool playing = false;
+bool in_note = false;
+int current_note = 0;
+unsigned long note_start_micros;
+unsigned long note_interval;
+unsigned int floppies_playing;
+unsigned long last_millis;
+unsigned long elapsed_millis;
+unsigned long song_millis;
 
 void setup() {
   sm_setup();
@@ -32,18 +43,9 @@ void setup() {
   reset_drives();
 }
 
-bool playing = false;
-bool in_note = false;
-int current_note = 0;
-unsigned long note_start_micros;
-unsigned long note_interval;
-unsigned int floppies_playing;
-unsigned long last_millis;
-unsigned long elapsed_millis;
-unsigned long song_millis;
-
 void reset_drives() {
   for (int f = 0; f < floppy_count; f++) {
+    digitalWrite(floppy_pins[f]+enable_pin, HIGH);
     digitalWrite(floppy_pins[f]+dir_pin, dir_reverse);
   }
 
@@ -65,12 +67,17 @@ void reset_drives() {
 
 void pulse_drives(int floppies_playing) {
   for (int f = 0; f < floppies_playing; f++) {
+    digitalWrite(floppy_pins[f]+enable_pin, LOW);
     digitalWrite(floppy_pins[f]+step_pin, floppy_position[f]++ % 2 ? LOW : HIGH);
     if (floppy_position[f] > max_floppy_steps * 2) {
       floppy_dir[f] = floppy_dir[f] == dir_forward ? dir_reverse : dir_forward;
       digitalWrite(floppy_pins[f]+dir_pin, floppy_dir[f]);
       floppy_position[f] = 0;
     }
+  }
+
+  for (int f = floppies_playing;f < floppy_count; f++) {
+    digitalWrite(floppy_pins[f]+enable_pin, HIGH);
   }
 }
 
@@ -139,6 +146,10 @@ void loop() {
         pulse_drives(floppies_playing);
         delayMicroseconds(20);
         pulse_drives(floppies_playing);
+      }
+    } else {
+      for (int f = 0;f < floppy_count; f++) {
+        digitalWrite(floppy_pins[f]+enable_pin, HIGH);
       }
     }
   }

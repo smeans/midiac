@@ -147,7 +147,7 @@ class SoundModule(object):
             f.close()
 
         self.close_port()
-        print subprocess.check_output(['arduino_debug.exe', '--upload', sketch_path, '--port', self.port])
+        print subprocess.check_output(['arduino', '--upload', sketch_path, '--port', self.port])
         self.open_port()
 
     def __del__(self):
