@@ -7,7 +7,7 @@ pp = pprint.PrettyPrinter(indent=4)
 # !!!LATER!!! refactor to be managed by config.
 
 # sm.SoundModule('floppy1', '/dev/ttyUSB1', 'floppy'), sm.SoundModule('floppy2', '/dev/ttyUSB2', 'floppy'), sm.SoundModule('percussion0', '/dev/ttyUSB3', 'percussion')
-sound_modules = [sm.SoundModule('floppy0', '/dev/ttyUSB1', 'floppy'), sm.SoundModule('floppy1', '/dev/ttyUSB2', 'floppy'), sm.SoundModule('percussion0', '/dev/ttyUSB0', 'percussion') ]
+sound_modules = [sm.SoundModule('floppy0', '/dev/ttyUSB4', 'floppy'), sm.SoundModule('floppy1', '/dev/ttyUSB3', 'floppy'), sm.SoundModule('floppy2', '/dev/ttyUSB1', 'floppy'), sm.SoundModule('floppy3', '/dev/ttyUSB2', 'floppy'), sm.SoundModule('percussion0', '/dev/ttyUSB0', 'percussion') ]
 
 def queue(midi_file):
     unwrapped_notes = unwrap_midi(midi_file)
@@ -16,7 +16,9 @@ def queue(midi_file):
 def play(midi_file):
     unwrapped_notes = unwrap_midi(midi_file)
     distribute_notes(unwrapped_notes)
-
+    play_sync()
+    
+def play_sync():
     start_time = time.clock() + 5
 
     for sound_module in sound_modules:
@@ -29,8 +31,11 @@ def control(command):
         print 'bad command message %s' % command
         return None
 
-    for sound_module in sound_modules:
-        sound_module.control(command)
+    if command['action'] == 'play':
+        play_sync()
+    else:
+        for sound_module in sound_modules:
+            print sound_module.control(command)
 
 def distribute_notes(unwrapped_notes):
     notes = [[] for _ in range(len(sound_modules))]
@@ -55,13 +60,27 @@ def distribute_notes(unwrapped_notes):
     if unplayable_notes > 0:
         print 'Unplayable Notes %d/%d (%f%%)' % (unplayable_notes, len(unwrapped_notes), float(unplayable_notes) / float(len(unwrapped_notes))*100.0)
 
+    processes = []
     for i in range(len(sound_modules)):
         calc_delays(notes[i])
         # !!!HACK!!! simultaneous notes yield negative delays; we need multiple
         # floppy modules to play
         notes[i] = [note for note in notes[i] if note['delay'] >= 0]
-        sound_modules[i].upload_sketch(notes[i])
-
+        processes.append(sound_modules[i].upload_sketch(notes[i]))
+        
+    for process in processes:
+        complete = False
+        while not complete:
+            try:
+                out, err = process.communicate()
+                print(out, err)
+                complete = True
+            except Exception as e:
+                print('waiting on %s: %s' % (process, e))
+    
+    for sm in sound_modules:
+        sm.open_port()
+        
 def calc_delays(notes):
     if len(notes) <= 0:
         return

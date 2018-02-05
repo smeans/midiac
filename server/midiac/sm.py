@@ -107,9 +107,9 @@ class SoundModule(object):
             print 'unrecognized command "%s"' % action
             return None
 
-        if action != 'volume':
-            self.serial.write(str(chr(message_map[action])))
-        else:
+        if action == 'play':
+            self.serial.write(str(chr(self.MSG_PLAY)) + struct.pack('<L', 0))
+        elif action == 'volume':
             if not 'value' in command:
                 print 'missing volume value: %s' % command
                 return None
@@ -119,6 +119,8 @@ class SoundModule(object):
             new_volume = int(min(self.MAX_AMPLITUDE, max(0, value * self.MAX_AMPLITUDE)))
             print 'value %d new_volume %d' % (value, new_volume)
             self.serial.write(str(chr(new_volume)))
+        else:
+            self.serial.write(str(chr(message_map[action])))
 
         return self.read_status()
 
@@ -147,8 +149,10 @@ class SoundModule(object):
             f.close()
 
         self.close_port()
-        print subprocess.check_output(['arduino', '--upload', sketch_path, '--port', self.port])
-        self.open_port()
+        args = ['arduino', '--upload', sketch_path, '--port', self.port]
+        print('launching %s' % ' '.join(args))
+        return subprocess.Popen(args)
+        #self.open_port()
 
     def __del__(self):
         self.serial.close()
