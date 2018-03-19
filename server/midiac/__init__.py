@@ -17,7 +17,7 @@ def play(midi_file):
     unwrapped_notes = unwrap_midi(midi_file)
     distribute_notes(unwrapped_notes)
     play_sync()
-    
+
 def play_sync():
     start_time = time.clock() + 5
 
@@ -67,7 +67,7 @@ def distribute_notes(unwrapped_notes):
         # floppy modules to play
         notes[i] = [note for note in notes[i] if note['delay'] >= 0]
         processes.append(sound_modules[i].upload_sketch(notes[i]))
-        
+
     for process in processes:
         complete = False
         while not complete:
@@ -77,10 +77,10 @@ def distribute_notes(unwrapped_notes):
                 complete = True
             except Exception as e:
                 print('waiting on %s: %s' % (process, e))
-    
+
     for sm in sound_modules:
         sm.open_port()
-        
+
 def calc_delays(notes):
     if len(notes) <= 0:
         return
@@ -105,20 +105,7 @@ def unwrap_midi(midi_file):
     for message in mid:
         midi_time += message.time
 
-        if message.type == 'note_on':
-            if note_array[message.note]:
-                note_array[message.note]['velocities'][message.channel] = message.velocity
-                new_velocity = calc_velocity(note_array[message.note]['velocities'])
-                if new_velocity != note_array[message.note]['velocity']:
-                    unwrapped_notes.append({'note': message.note,
-                        'startTime': note_array[message.note]['startTime'],
-                        'velocity': note_array[message.note]['velocity'],
-                        'duration': midi_time-note_array[message.note]['startTime'] if message.channel != 9 else 0})
-                    note_array[message.note]['startTime'] = midi_time
-                    note_array[message.note]['velocity'] = new_velocity
-            else:
-                note_array[message.note] = {'startTime': midi_time, 'velocity': message.velocity, 'velocities': {message.channel: message.velocity}}
-        elif message.type =='note_off':
+        if message.type =='note_off' or (message.type =='note_on' and message.velocity == 0):
             if note_array[message.note]:
                 try:
                     del note_array[message.note]['velocities'][message.channel]
@@ -141,6 +128,19 @@ def unwrap_midi(midi_file):
                             'duration': midi_time-note_array[message.note]['startTime'] if message.channel != 9 else 0})
                         note_array[message.note]['startTime'] = midi_time
                         note_array[message.note]['velocity'] = new_velocity
+        elif message.type == 'note_on':
+            if note_array[message.note]:
+                note_array[message.note]['velocities'][message.channel] = message.velocity
+                new_velocity = calc_velocity(note_array[message.note]['velocities'])
+                if new_velocity != note_array[message.note]['velocity']:
+                    unwrapped_notes.append({'note': message.note,
+                        'startTime': note_array[message.note]['startTime'],
+                        'velocity': note_array[message.note]['velocity'],
+                        'duration': midi_time-note_array[message.note]['startTime'] if message.channel != 9 else 0})
+                    note_array[message.note]['startTime'] = midi_time
+                    note_array[message.note]['velocity'] = new_velocity
+            else:
+                note_array[message.note] = {'startTime': midi_time, 'velocity': message.velocity, 'velocities': {message.channel: message.velocity}}
         elif message.type == 'set_tempo':
             pp.pprint(message)
         elif message.type == 'time_signature':
